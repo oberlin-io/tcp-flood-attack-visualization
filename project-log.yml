@@ -1,0 +1,148 @@
+#Process Doc
+
+0002:
+  goal: Get source dataset
+  desc: |
+    Located NetFlow data with attack labeling. ZIP called WISENT-CIDDS-001.
+    Working with //CIDDS-001-internal-week1.csv. 8,451,520 records. Created to
+    reproduce
+    an insider atttack(s) from an infected host (internal). (Other datasets for
+    external threats.)
+  code: |
+    https://www.hs-coburg.de/forschung-kooperation/forschungsprojekte
+    -oeffentlich/informationstechnologie/cidds-coburg-intrusion-detection-data
+    -sets.html
+
+0005:
+  goal: Explore source dataset
+  desc: |
+    Uploaded CSV to Google Drive, imported into Google BigQuery (new project >
+    new dataset > new table). Set BQ header row = 1. Edit schema as JSON text.
+    Datatype issues with Bytes column. Includes integers and strings like
+    "  6 M".
+  tech: BigQuery
+  code: |
+    [
+      {	"name": 	"Date_first_seen", 	   "type": 	"TIMESTAMP"},
+      {	"name": 	"Duration", 	         "type": 	"FLOAT" 	 },
+      {	"name": 	"Proto", 	             "type": 	"STRING" 	 },
+      {	"name": 	"Src_IP_Addr", 	       "type": 	"STRING" 	 },
+      {	"name": 	"Src_Pt", 	           "type": 	"STRING" 	 },
+      {	"name": 	"Dst_IP_Addr", 	       "type": 	"STRING" 	 },
+      {	"name": 	"Dst_Pt", 	           "type": 	"STRING" 	 },
+      {	"name": 	"Packets", 	           "type": 	"INTEGER"  },
+      {	"name": 	"Bytes", 	             "type": 	"STRING" 	 },
+      {	"name": 	"Flows", 	             "type": 	"STRING" 	 },
+      {	"name": 	"Flags", 	             "type": 	"STRING" 	 },
+      {	"name": 	"Tos", 	               "type": 	"STRING" 	 },
+      {	"name": 	"class", 	             "type": 	"STRING" 	 },
+      {	"name": 	"attackType", 	       "type": 	"STRING" 	 },
+      {	"name": 	"attackID", 	         "type": 	"STRING" 	 },
+      {	"name": 	"attackDescription",   "type": 	"STRING" 	 }
+    ]
+    
+0015:
+  goal: Wrangle Bytes strings to integers
+  desc: |
+    Located all records where Bytes LIKE "%M" (4,325 matches). Saved to Sheets.
+    Confirmed count LIKE "%B" = 0.
+  tech: BigQuery
+  code: |
+    SELECT Bytes
+    FROM `netflow-attack-analysis.cidds001.internal_week_1`
+    WHERE Bytes LIKE "%M"
+
+0018:
+  goal: Wrangle Bytes strings to integers
+  desc: |
+    Confirmed all Bytes LIKE "%M" have one decimal place, ie "1.0 M".
+  tech: Sheets
+  code: |
+    =REGEXMATCH(B2, "\d\.\d\s")
+    
+    
+0022:
+  goal: Wrangle Bytes strings to integers
+  desc: |
+    Prep change data. Change "   1.5 M" to "1500000".
+  tech: Sheets
+  code: |
+    =
+    REGEXREPLACE(
+      REGEXREPLACE(
+        REGEXREPLACE(
+          A2,
+          "(^\s*)",
+          ""
+        ),
+        "\sM",
+        "00000"
+      ),
+      "\.",
+      ""
+    )
+    
+    
+0020:
+  goal: Wrangle Bytes strings to integers
+  desc: |
+    Check if Date_first_seen column can be used as a unique identifier. No,
+    COUNT != COUNT DISTINCT. 6175897 != 5078189
+  tech: BigQuery
+  code: |
+    SELECT COUNT(Date_first_seen), COUNT(DISTINCT Date_first_seen)
+    FROM `netflow-attack-analysis.cidds001.internal_week_1`
+
+0022:
+  goal: Wrangle Bytes strings to integers
+  desc: |
+    Change "1.0 M" to "1000000" in dataset table via batch mutation. New table
+    merged on match, SET Bytes.
+    ERROR! Consider not importing Bytes / ignoring in analysis for now to move
+    on.
+  tech: BigQuery
+  code: |
+    MERGE `netflow-attack-analysis.cidds001.internal_week_1` C
+    USING `netflow-attack-analysis.cidds001.newBytes` N
+    ON C.Bytes = N.Bytes
+    WHEN MATCHED THEN
+      UPDATE SET Bytes = N.NewBytes
+  error: |
+    DML over table is not supported.
+    
+0028:
+  goal: Filter dataset and get workable table
+  desc: |
+    Filter to 5-hour period of known non-dos traffic and dos.
+    Filter out attack types except DOS type.
+    Save in Sheets.  records (flows)
+  tech: BigQuery
+  code: |
+    SELECT Date_first_seen, Duration, Proto, Src_IP_Addr, Src_Pt, Dst_IP_Addr, Dst_Pt, Packets, Bytes, Flags, class
+    FROM `netflow-attack-analysis.cidds001.internal_week_1`
+    WHERE
+      Date_first_seen >= "2017-03-15 11:00:00"
+      AND Date_first_seen < "2017-03-15 16:00:00"
+      AND NOT attackType = "bruteForce"
+      AND NOT attackType ="portScan"
+      AND NOT attackType = "pingScan"
+  
+0030:
+  goal: Clean, convert Bytes
+  desc: |
+    For some reason, bytes column comes as string with preceding whitespace.
+    Must replace white space and convert to number
+  tech: ~
+  code: ~
+    =regexreplace(I2, "^\s*", "")
+
+stopped-at: |
+  0028
+  Try new query. Should be smaller w/ 11 fields.
+  Will it fit Sheets, cells < 1 M?
+
+0000:
+  goal: ~
+  desc: ~
+  tech: ~
+  code: ~
