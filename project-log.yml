@@ -115,7 +115,7 @@
     Limit datetime to one day, extract hours and minutes (minutes in timestamp was
     not processing in Data Studio), regex and recast Bytes,
     filter out non-DOS attacks.
-    Try saving table, and connecting BQ to Data Studio
+    Table saved in BG as 2017_03_15.
   tech: BigQuery
   code: |
     SELECT
@@ -154,6 +154,25 @@
       AND NOT attackType = "bruteForce"
       AND NOT attackType ="portScan"
       AND NOT attackType = "pingScan"
+
+0026:
+  goal: Break out Flags data
+  desc: Flags broken out into boolean. Table saved in BQ as 2017_03_15_Flags
+  tech: BigQuery
+  code: |
+    SELECT
+      Hour, Minute, Duration, `Proto`, Src_IP_Addr, Src_Pt, Dst_IP_Addr,
+      Dst_Pt, Bytes_ AS Bytes, Packets,
+
+      REGEXP_CONTAINS(Flags, r"A") AS ACK,
+      REGEXP_CONTAINS(Flags, r"P") AS PSH,
+      REGEXP_CONTAINS(Flags, r"R") AS RST,
+      REGEXP_CONTAINS(Flags, r"S") AS SYN,
+      REGEXP_CONTAINS(Flags, r"F") AS FIN,
+
+      class
+
+    FROM `netflow-attack-analysis.cidds001.2017_03_15`
 
 0028:
   goal: Filter dataset and get workable table
