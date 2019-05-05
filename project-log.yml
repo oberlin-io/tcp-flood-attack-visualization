@@ -20,6 +20,7 @@
     new dataset > new table). Set BQ header row = 1. Edit schema as JSON text.
     Datatype issues with Bytes column. Includes integers and strings like
     "  6 M".
+    Also, field name Proto seems to conflict with BQ, PROTO is 
   tech: BigQuery
   code: |
     [
@@ -108,6 +109,55 @@
   error: |
     DML over table is not supported.
   
+0024: 
+  goal: Get a day's data while wrangling Bytes strings to integers
+  desc: |
+    Limit datetime to one day, extract date and time, regex and recast Bytes,
+    filter out non-DOS attacks.
+    Problem is 1.1 GB and 1 GB is limit for export as CSV. First, try removing
+    Bytes (not Bytes_), as that seems to have transformed correctly.
+    If still > 1 GB, shorten time window a little.
+    Or try cutting into two by datetime windows, saving two CSVs, and in Data
+    Studio, blending data.
+  tech: BigQuery
+  code: |
+    SELECT
+      EXTRACT(DATE FROM Date_first_seen) AS Date_first_seen,
+      EXTRACT(TIME FROM Date_first_seen) AS Time_first_seen,
+    
+      Duration, `Proto`, Src_IP_Addr, Src_Pt, Dst_IP_Addr, Dst_Pt, Packets, Bytes,
+    
+      IF(
+        Bytes LIKE "%M",
+        CAST(
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(
+              REGEXP_REPLACE(Bytes, r"\sM", "00000"),
+              r"\.",
+              ""
+            ),
+            r"^\s*",
+            ""
+          ) AS INT64
+        ),
+        CAST(
+          REGEXP_REPLACE(
+            Bytes, r"^\s*", ""
+          ) AS INT64
+        )
+      ) AS Bytes_,
+
+      Flags, class
+
+    FROM `netflow-attack-analysis.cidds001.internal_week_1`
+
+    WHERE
+      Date_first_seen >= "2017-03-15 00:00:00"
+      AND Date_first_seen < "2017-03-16 00:00:00"
+      AND NOT attackType = "bruteForce"
+      AND NOT attackType ="portScan"
+      AND NOT attackType = "pingScan"
+
 0028:
   goal: Filter dataset and get workable table
   desc: |
@@ -134,10 +184,10 @@
   code: ~
     =regexreplace(I2, "^\s*", "")
 
+
 stopped-at: |
-  0028
-  Try new query. Should be smaller w/ 11 fields.
-  Will it fit Sheets, cells < 1 M?
+  0024
+  
 
 0000:
   goal: ~
