@@ -166,7 +166,8 @@
     Save in Sheets.  records (flows)
   tech: BigQuery
   code: |
-    SELECT Date_first_seen, Duration, Proto, Src_IP_Addr, Src_Pt, Dst_IP_Addr, Dst_Pt, Packets, Bytes, Flags, class
+    SELECT Date_first_seen, Duration, Proto, Src_IP_Addr, Src_Pt, Dst_IP_Addr,
+    Dst_Pt, Packets, Bytes, Flags, class
     FROM `netflow-attack-analysis.cidds001.internal_week_1`
     WHERE
       Date_first_seen >= "2017-03-15 11:00:00"
