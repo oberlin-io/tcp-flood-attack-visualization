@@ -112,42 +112,39 @@
 0024: 
   goal: Get a day's data while wrangling Bytes strings to integers
   desc: |
-    Limit datetime to one day, extract date and time, regex and recast Bytes,
+    Limit datetime to one day, extract hours and minutes (minutes in timestamp was
+    not processing in Data Studio), regex and recast Bytes,
     filter out non-DOS attacks.
-    Problem is 1.1 GB and 1 GB is limit for export as CSV. First, try removing
-    Bytes (not Bytes_), as that seems to have transformed correctly.
-    If still > 1 GB, shorten time window a little.
-    Or try cutting into two by datetime windows, saving two CSVs, and in Data
-    Studio, blending data.
+    Try saving table, and connecting BQ to Data Studio
   tech: BigQuery
   code: |
     SELECT
-      EXTRACT(DATE FROM Date_first_seen) AS Date_first_seen,
-      EXTRACT(TIME FROM Date_first_seen) AS Time_first_seen,
-    
-      Duration, `Proto`, Src_IP_Addr, Src_Pt, Dst_IP_Addr, Dst_Pt, Packets, Bytes,
-    
-      IF(
-        Bytes LIKE "%M",
-        CAST(
-          REGEXP_REPLACE(
-            REGEXP_REPLACE(
-              REGEXP_REPLACE(Bytes, r"\sM", "00000"),
-              r"\.",
-              ""
-            ),
-            r"^\s*",
-            ""
-          ) AS INT64
-        ),
-        CAST(
-          REGEXP_REPLACE(
-            Bytes, r"^\s*", ""
-          ) AS INT64
-        )
-      ) AS Bytes_,
+    EXTRACT(HOUR FROM Date_first_seen) AS Hour,
+    EXTRACT(MINUTE FROM Date_first_seen) AS Minute,
 
-      Flags, class
+    Duration, `Proto`, Src_IP_Addr, Src_Pt, Dst_IP_Addr, Dst_Pt, Packets,
+
+    IF(
+      Bytes LIKE "%M",
+      CAST(
+        REGEXP_REPLACE(
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(Bytes, r"\sM", "00000"),
+            r"\.",
+            ""
+          ),
+          r"^\s*",
+          ""
+        ) AS INT64
+      ),
+      CAST(
+        REGEXP_REPLACE(
+          Bytes, r"^\s*", ""
+        ) AS INT64
+      )
+    ) AS Bytes_,
+
+    Flags, class
 
     FROM `netflow-attack-analysis.cidds001.internal_week_1`
 
