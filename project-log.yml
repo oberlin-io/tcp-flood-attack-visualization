@@ -157,7 +157,9 @@
 
 0026:
   goal: Break out Flags data
-  desc: Flags broken out into boolean. Table saved in BQ as 2017_03_15_Flags
+  desc: |
+    Flags broken out into 1,0 four count analysis.
+    Table saved in BQ as 2017_03_15_Flags
   tech: BigQuery
   code: |
     SELECT
@@ -200,7 +202,9 @@
 
 
 stopped-at: |
-  0024
+  0026
+  In viz. Consider SYN-PSH relationship as one method to detect DOS attack.
+  Also check Src IP counts per hour for anomalies 
   
 
 0000:
