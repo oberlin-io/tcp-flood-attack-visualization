@@ -60,7 +60,6 @@
   code: |
     =REGEXMATCH(B2, "\d\.\d\s")
     
-    
 0022:
   goal: Wrangle Bytes strings to integers
   desc: |
@@ -81,7 +80,6 @@
       "\.",
       ""
     )
-    
     
 0020:
   goal: Wrangle Bytes strings to integers
@@ -109,7 +107,7 @@
       UPDATE SET Bytes = N.NewBytes
   error: |
     DML over table is not supported.
-    
+  
 0028:
   goal: Filter dataset and get workable table
   desc: |
